@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "mandirmapapp",
+  "private_key_id": "17e040bd7694d0b6c03fc4b59965fb894af99fe8",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDEAdckErUYckbO\np/kbi/zTiLz86gH4qqomqaqAsAO715Ou4kyEEDz5l+UIL5ebR4vNeLZ18VWZR4Qk\nt6480tb5Mt9K1ZzRLCJfthaYbZHuOUKDDlb6pHLFl4gPtZwQa5PLXZNuggdp2NkC\n8cGpVWXsebwmHgeS1V0BcUJw705/FXmqc601cszRiYcs7+z3HCOH3QBr+rvnnVUn\nQ5JcNt1pH3uYahReQvMjrRGHv8nL8892b5ErYULXGoq5bZlI5GvVynEoCvllbwqV\nwYoawTWyQTRRwReq5YGyZGSpZLz4yUCakaIV3gO0UXsEiJGrXi+QUYzllhY0vNaB\ngRygp2GjAgMBAAECggEAC/oCz9j2yNYevnzkC0tb+P73cUrJMQ0YlYEzgmZ+6+jp\nxLteKomleCjQXVYvINVX1QfFumIzNUj56ZZxppTJfvOdUkDIMr3MIeYJ7mlvi8ti\n5YgoR2tp+ene7frOXPB92OTQX+XBFzYhWH02NKcbsb3kgb2+/7la0/48LZNpy/kD\n/wNNz8vNIVrZl+7Ar06x3aY/f2ljFmViXTgNSUP/dijTm4z4BJdRGXRYzqJigl9Z\nt6Y2jC5vyc27Tk8lyNojUhMGX4/qb2QAZlGZmjGh1aTdPzzM3s2+mrfCCblAzD9j\n08k7Bn+3lXqomjSpnkImwYmOzClHkph9xYgxr7yfhQKBgQDyT5gArrBbuq+UkNyt\nj0OJKUIrJkpWUq0R1L69SEGIwk8DipU63XWgKB14/xdTLBDz/q7csdimgj+5J3uc\n/XQPZipZkrwuWJXHEyXQ+e8dyp1E0+NAbsB04RLWbSbj6eNC1U3QGy+uT3qCOn4b\nhdw/0VhpVTyl2/kuPJ15FSJJvwKBgQDPFJT7Dj91M+A/dxIW50MxJ2VIryVSQeXT\neTuSB3E1cdTc6I513g09dBnKp5ZEQ8ZW8eRM4tL+MKNiz+UAi8FpLRYK863auZYe\n5BERdUEy1TdkgWlbXh17AAbfCqWR382pcCxGWHrdvW21g3qy0b6adDBygEQ7U4zQ\nxBu4xga5HQKBgHTbedzqYlb6o26spiB1tQZTBXw1zSfwW1L8HLjAPgqsWtrEXM+0\nueNxNTWDIEaWO97P9pislGVI715l8jF18iDzDn2ATIy1YBZP3672uiDN9CabYT9T\nqjEz0pfisBy+UUGMCSjR057m6ZggiWzQk7WbSl4SI1uByJxJ00/vp0eVAoGAO4Ht\noguhHrwOmA5Oi3hfrbNlfrKeJfo74j53aOpslPAmPGkz7xklcuB3PO5V1z4ms/uF\nILcZ7OPrP80AQNzocqH7MKB/+FfWlP/zC7JHTyVIasBpl1D/ZcZHMzcrBzVqM2PB\nxWFNxYTXDw8+Zj6x6E61UWIcuXO0BpYkZT+61N0CgYEAlVc8ul5pjuPUJtZRE+Gv\njmTAoWUsCsOUiRF9P4yfblzkFcVlzwuEtZCBVMW+8Wcznk2gevtewQBflQVinoRQ\nDxsLxsATzEJ9CcOPrg0XiCyxuoC8poAV5FtzFIwYkDpbg1Qd8z9RkDp4cRC9kUYB\nAGCxTyLbwWXt/ZLJ7YkzELc=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@mandirmapapp.iam.gserviceaccount.com",
+  "client_id": "100671528744755293891",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40mandirmapapp.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
