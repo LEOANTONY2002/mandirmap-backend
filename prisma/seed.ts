@@ -1,19 +1,23 @@
 import { PrismaClient, Category, Language, MediaType } from '@prisma/client';
 
+import * as bcrypt from 'bcryptjs';
+
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Seeding data...');
 
+  const hashedPassword = await bcrypt.hash('password123', 10);
+
   // 1. Create a dummy user
   const user = await prisma.user.upsert({
-    where: { firebaseUid: 'dev-uid' },
+    where: { email: 'dev@mandirmap.com' },
     update: {},
     create: {
-      firebaseUid: 'dev-uid',
       fullName: 'Dev User',
       email: 'dev@mandirmap.com',
       phoneNumber: '+919999999999',
+      password: hashedPassword,
       language: Language.ENGLISH,
       avatarUrl:
         'https://images.unsplash.com/photo-1544198365-f5d60b6d8190?w=200&q=80',
@@ -49,6 +53,10 @@ async function main() {
       nameMl: 'ശ്രീ സുബ്രഹ്മണ്യ സ്വാമി ക്ഷേത്രം',
       addressText: 'Payyanur, Kannur, Kerala',
       addressTextMl: 'പയ്യന്നൂർ, കണ്ണൂർ, കേരളം',
+      district: 'Kannur',
+      districtMl: 'കണ്ണൂർ',
+      state: 'Kerala',
+      stateMl: 'കേരളം',
       lat: 12.1031,
       lng: 75.2023,
       history: 'A historic temple dedicated to Lord Subrahmanya...',
@@ -60,23 +68,52 @@ async function main() {
       nameMl: 'പറശ്ശിനിക്കടവ് മുത്തപ്പൻ ക്ഷേത്രം',
       addressText: 'Parassinikadavu, Kannur, Kerala',
       addressTextMl: 'പറശ്ശിനിക്കടവ്, കണ്ണൂർ, കേരളം',
+      district: 'Kannur',
+      districtMl: 'കണ്ണൂർ',
+      state: 'Kerala',
+      stateMl: 'കേരളം',
       lat: 11.9839,
       lng: 75.4011,
       history: 'Famous for Theyyam performance...',
       historyMl: 'തെയ്യം കെട്ടിയാടുന്നതിന് പ്രശസ്തമായ ക്ഷേത്രം...',
     },
+    {
+      name: 'Guruvayur Temple',
+      nameMl: 'ഗുരുവായൂർ ക്ഷേത്രം',
+      addressText: 'Guruvayur, Thrissur, Kerala',
+      addressTextMl: 'ഗുരുവായൂർ, തൃശൂർ, കേരളം',
+      district: 'Thrissur',
+      districtMl: 'തൃശൂർ',
+      state: 'Kerala',
+      stateMl: 'കേരളം',
+      lat: 10.5946,
+      lng: 76.0402,
+      history: 'Dedicated to Lord Guruvayurappan...',
+      historyMl: 'ശ്രീ ഗുരൂവായൂരപ്പന് സമർപ്പിച്ചിരിക്കുന്നത്...',
+    },
   ];
 
+  const locRecords: any[] = [];
   for (const t of temples) {
     const loc = await prisma.location.upsert({
-      where: { id: t.name }, // Using name as dummy ID for upsert logic if needed, but create is fine for now
-      update: {},
+      where: { id: t.name },
+      update: {
+        district: t.district,
+        districtMl: t.districtMl,
+        state: t.state,
+        stateMl: t.stateMl,
+      },
       create: {
+        id: t.name,
         name: t.name,
         nameMl: t.nameMl,
         category: Category.TEMPLE,
         addressText: t.addressText,
         addressTextMl: t.addressTextMl,
+        district: t.district,
+        districtMl: t.districtMl,
+        state: t.state,
+        stateMl: t.stateMl,
         latitude: t.lat,
         longitude: t.lng,
         temple: {
@@ -85,10 +122,15 @@ async function main() {
             historyMl: t.historyMl,
             openTime: '5:00 AM',
             closeTime: '8:00 PM',
+            vazhipaduData: [
+              { name: 'Pushpanjali', price: 20 },
+              { name: 'Neyvilakku', price: 50 },
+            ],
           },
         },
       },
     });
+    locRecords.push(loc);
 
     // Link some deities to temples
     await (prisma as any).templeDeity.upsert({
@@ -108,12 +150,9 @@ async function main() {
     // 4. Create Festivals
     await (prisma as any).festival.create({
       data: {
-        name: 'Theyyam Mahotsavam',
-        nameMl: 'തെയ്യം മഹോത്സവം',
-        description:
-          'A grand celebration featuring sacred Theyyam performances and ritualistic dance.',
-        descriptionMl:
-          'തെയ്യം കെട്ടിയാടലും അനുഷ്ഠാന കലകളും ഉൾപ്പെടുന്ന ഗംഭീരമായ ആഘോഷം.',
+        name: `${t.name} Mahotsavam`,
+        nameMl: 'മഹോത്സവം',
+        description: 'A grand celebration featuring sacred rituals.',
         startDate: new Date('2026-02-20'),
         endDate: new Date('2026-02-25'),
         locationId: loc.id,
@@ -129,16 +168,18 @@ async function main() {
     {
       name: 'Temple View Residency',
       address: 'Near Payyanur Temple, Kannur',
+      district: 'Kannur',
       lat: 12.1035,
       lng: 75.2025,
       price: 1200,
     },
     {
-      name: 'Sacred Stay Homes',
-      address: 'Temple Road, Parassinikadavu',
-      lat: 11.9845,
-      lng: 75.4015,
-      price: 800,
+      name: 'Thrissur Comfort Stay',
+      address: 'Near Guruvayur Temple, Thrissur',
+      district: 'Thrissur',
+      lat: 10.595,
+      lng: 76.041,
+      price: 1500,
     },
   ];
 
@@ -148,6 +189,8 @@ async function main() {
         name: h.name,
         category: Category.HOTEL,
         addressText: h.address,
+        district: h.district,
+        state: 'Kerala',
         latitude: h.lat,
         longitude: h.lng,
         hotel: {
@@ -173,6 +216,7 @@ async function main() {
     {
       name: 'Annapoorna Pure Veg',
       address: 'Main Road, Payyanur',
+      district: 'Kannur',
       lat: 12.102,
       lng: 75.201,
     },
@@ -184,6 +228,8 @@ async function main() {
         name: r.name,
         category: Category.RESTAURANT,
         addressText: r.address,
+        district: r.district,
+        state: 'Kerala',
         latitude: r.lat,
         longitude: r.lng,
         restaurant: {

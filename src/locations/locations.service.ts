@@ -57,16 +57,9 @@ export class LocationsService {
     const festivals = await this.prisma.festival.findMany({
       where: district
         ? {
-            OR: [
-              {
-                location: {
-                  addressText: { contains: district, mode: 'insensitive' },
-                },
-              },
-              {
-                name: { contains: district, mode: 'insensitive' },
-              },
-            ],
+            location: {
+              district: { equals: district, mode: 'insensitive' },
+            },
           }
         : {},
       include: {
@@ -76,6 +69,24 @@ export class LocationsService {
       orderBy: { startDate: 'asc' },
     });
     return festivals.map((f) => this.localizeFestival(f, lang));
+  }
+
+  async getDistricts(lang: string) {
+    const locations = await this.prisma.location.findMany({
+      where: {
+        district: { not: null },
+      },
+      select: {
+        district: true,
+        districtMl: true,
+      },
+      distinct: ['district'],
+    });
+
+    return locations.map((l) => ({
+      name: lang === 'ml' && l.districtMl ? l.districtMl : l.district,
+      id: l.district,
+    }));
   }
 
   async search(lang: string, query: string) {
@@ -91,7 +102,9 @@ export class LocationsService {
         media: true,
       },
     });
-    return locations.map((l) => this.localizeLocation(l, lang));
+    return locations.map((l) =>
+      this.localizeLocation(this.mapLocationFields(l), lang),
+    );
   }
 
   async getTempleDetails(lang: string, id: string) {
@@ -114,7 +127,18 @@ export class LocationsService {
         media: true,
       },
     });
-    return location ? this.localizeLocation(location, lang) : null;
+    return location
+      ? this.localizeLocation(this.mapLocationFields(location), lang)
+      : null;
+  }
+
+  private mapLocationFields(l: any) {
+    return {
+      ...l,
+      addressText: l.addressText,
+      averageRating: l.averageRating,
+      totalRatings: l.totalRatings,
+    };
   }
 
   private localizeLocation(l: any, lang: string) {
@@ -124,6 +148,8 @@ export class LocationsService {
         name: l.nameMl || l.name,
         description: l.descriptionMl || l.description,
         addressText: l.addressTextMl || l.addressText,
+        district: l.districtMl || l.district,
+        state: l.stateMl || l.state,
         temple: l.temple
           ? {
               ...l.temple,

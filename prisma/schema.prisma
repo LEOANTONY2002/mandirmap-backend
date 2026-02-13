@@ -1,5 +1,5 @@
 // This is your optimized Mandir Map schema file
-// Modified for PostGIS, Firebase Auth, and Cloudflare Media
+// Modified for PostGIS, Custom JWT Auth, and Cloudflare Media
 
 generator client {
   provider = "prisma-client-js"
@@ -15,15 +15,17 @@ datasource db {
 // --- 1. User & Profile Management ---
 model User {
   id                String         @id @default(uuid())
-  firebaseUid       String         @unique @map("firebase_uid") // CRITICAL for Firebase Auth
   fullName          String         @map("full_name")
-  email             String?        @unique
+  email             String         @unique
   phoneNumber       String         @unique @map("phone_number")
+  password          String
   avatarUrl         String?        @map("avatar_url")
   language          Language       @default(ENGLISH)
   address1          String?        @map("address_1")
   address2          String?        @map("address_2")
   address3          String?        @map("address_3")
+  district          String?
+  state             String?
   fcmToken          String?        @map("fcm_token")
   createdAt         DateTime       @default(now()) @map("created_at")
   
@@ -53,6 +55,10 @@ model Location {
   addressTextMl   String?       @map("address_text_ml")
   latitude        Float
   longitude       Float
+  district        String?
+  districtMl      String?      @map("district_ml")
+  state           String?
+  stateMl         String?      @map("state_ml")
   
   // PostGIS point for spatial indexing
   coords          Unsupported("geography(Point, 4326)")? @map("coords")

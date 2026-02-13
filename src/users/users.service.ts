@@ -5,16 +5,32 @@ import { PrismaService } from '../prisma/prisma.service';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async updateFcmToken(firebaseUid: string, fcmToken: string) {
+  async updateFcmToken(userId: string, fcmToken: string) {
     return this.prisma.user.update({
-      where: { firebaseUid },
+      where: { id: userId },
       data: { fcmToken },
     });
   }
 
-  async findByFirebaseUid(firebaseUid: string) {
+  async findById(userId: string) {
     return this.prisma.user.findUnique({
-      where: { firebaseUid },
+      where: { id: userId },
+    });
+  }
+
+  async updateProfile(userId: string, data: any) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: data.fullName,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        address1: data.address1,
+        address2: data.address2,
+        address3: data.address3,
+        district: data.district,
+        state: data.state,
+      },
     });
   }
 }

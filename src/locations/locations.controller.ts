@@ -27,6 +27,11 @@ export class LocationsController {
     return this.locationsService.getDeities(lang);
   }
 
+  @Get('districts')
+  async getDistricts(@Headers('accept-language') lang: string = 'en') {
+    return this.locationsService.getDistricts(lang);
+  }
+
   @Get('festivals')
   async getFestivals(
     @Query('district') district?: string,

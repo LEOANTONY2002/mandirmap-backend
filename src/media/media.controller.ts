@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
-import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MediaType } from '@prisma/client';
 
 @Controller('media')
@@ -25,7 +25,7 @@ export class MediaController {
   }
 
   @Post('upload')
-  @UseGuards(FirebaseAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   async uploadMedia(
     @UploadedFile() file: Express.Multer.File,

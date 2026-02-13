@@ -9,51 +9,30 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { FavoritesService } from './favorites.service';
-import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
-import { PrismaService } from '../prisma/prisma.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('favorites')
+@UseGuards(JwtAuthGuard)
 export class FavoritesController {
-  constructor(
-    private readonly favoritesService: FavoritesService,
-    private prisma: PrismaService,
-  ) {}
+  constructor(private readonly favoritesService: FavoritesService) {}
 
   @Post('toggle')
-  @UseGuards(FirebaseAuthGuard)
   async toggle(@Req() req, @Body('locationId') locationId: string) {
-    const firebaseUid = req.user.uid;
-    const user = await this.prisma.user.findFirst({
-      // @ts-ignore
-      where: { firebaseUid },
-    });
-    if (!user) throw new UnauthorizedException('User not found');
-    return this.favoritesService.toggleFavorite(user.id, locationId);
+    const userId = req.user.id;
+    return this.favoritesService.toggleFavorite(userId, locationId);
   }
 
   @Get()
-  @UseGuards(FirebaseAuthGuard)
   async getFavorites(@Req() req) {
-    const firebaseUid = req.user.uid;
-    const user = await this.prisma.user.findFirst({
-      // @ts-ignore
-      where: { firebaseUid },
-    });
-    if (!user) throw new UnauthorizedException('User not found');
-    return this.favoritesService.getFavorites(user.id);
+    const userId = req.user.id;
+    return this.favoritesService.getFavorites(userId);
   }
 
   @Get('status/:locationId')
-  @UseGuards(FirebaseAuthGuard)
   async getStatus(@Req() req, @Param('locationId') locationId: string) {
-    const firebaseUid = req.user.uid;
-    const user = await this.prisma.user.findFirst({
-      // @ts-ignore
-      where: { firebaseUid },
-    });
-    if (!user) throw new UnauthorizedException('User not found');
+    const userId = req.user.id;
     const isFavorite = await this.favoritesService.isFavorite(
-      user.id,
+      userId,
       locationId,
     );
     return { isFavorite };
