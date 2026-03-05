@@ -6,8 +6,17 @@ import { Category } from '@prisma/client';
 export class LocationsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(lang: string, category?: Category, deityId?: string) {
+  async findAll(
+    lang: string,
+    category?: Category,
+    deityId?: string,
+    district?: string,
+  ) {
     const whereClause: any = category ? { category } : {};
+
+    if (district) {
+      whereClause.district = { equals: district, mode: 'insensitive' };
+    }
 
     if (deityId && !isNaN(Number(deityId))) {
       whereClause.temple = {
@@ -127,15 +136,20 @@ export class LocationsService {
     }));
   }
 
-  async getFestivals(lang: string, district?: string) {
+  async getFestivals(lang: string, district?: string, state?: string) {
+    const whereClause: any = {};
+    if (district) {
+      whereClause.location = {
+        district: { equals: district, mode: 'insensitive' },
+      };
+    } else if (state) {
+      whereClause.location = {
+        state: { equals: state, mode: 'insensitive' },
+      };
+    }
+
     const festivals = await this.prisma.festival.findMany({
-      where: district
-        ? {
-            location: {
-              district: { equals: district, mode: 'insensitive' },
-            },
-          }
-        : {},
+      where: whereClause,
       include: {
         location: true,
         deity: true,
@@ -145,11 +159,17 @@ export class LocationsService {
     return festivals.map((f) => this.localizeFestival(f, lang));
   }
 
-  async getDistricts(lang: string) {
+  async getDistricts(lang: string, state?: string) {
+    const whereClause: any = {
+      district: { not: null },
+    };
+
+    if (state) {
+      whereClause.state = { equals: state, mode: 'insensitive' };
+    }
+
     const locations = await this.prisma.location.findMany({
-      where: {
-        district: { not: null },
-      },
+      where: whereClause,
       select: {
         district: true,
         districtMl: true,

@@ -10,9 +10,10 @@ export class LocationsController {
   async findAll(
     @Query('category') category?: Category,
     @Query('deityId') deityId?: string,
+    @Query('district') district?: string,
     @Headers('accept-language') lang: string = 'en',
   ) {
-    return this.locationsService.findAll(lang, category, deityId);
+    return this.locationsService.findAll(lang, category, deityId, district);
   }
 
   @Get('search')
@@ -29,16 +30,20 @@ export class LocationsController {
   }
 
   @Get('districts')
-  async getDistricts(@Headers('accept-language') lang: string = 'en') {
-    return this.locationsService.getDistricts(lang);
+  async getDistricts(
+    @Query('state') state?: string,
+    @Headers('accept-language') lang: string = 'en',
+  ) {
+    return this.locationsService.getDistricts(lang, state);
   }
 
   @Get('festivals')
   async getFestivals(
     @Query('district') district?: string,
+    @Query('state') state?: string,
     @Headers('accept-language') lang: string = 'en',
   ) {
-    return this.locationsService.getFestivals(lang, district);
+    return this.locationsService.getFestivals(lang, district, state);
   }
 
   @Get('nearby')
