@@ -6,9 +6,21 @@ import { Category } from '@prisma/client';
 export class LocationsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(lang: string, category?: Category) {
+  async findAll(lang: string, category?: Category, deityId?: string) {
+    const whereClause: any = category ? { category } : {};
+
+    if (deityId && !isNaN(Number(deityId))) {
+      whereClause.temple = {
+        deities: {
+          some: {
+            deityId: Number(deityId),
+          },
+        },
+      };
+    }
+
     const locations = await this.prisma.location.findMany({
-      where: category ? { category } : {},
+      where: whereClause,
       include: {
         temple: {
           include: {
@@ -19,6 +31,7 @@ export class LocationsService {
         },
         hotel: true,
         restaurant: true,
+        media: true, // Including media to show photos in list
       },
     });
     return locations.map((l) => this.localizeLocation(l, lang));
@@ -29,18 +42,79 @@ export class LocationsService {
     lat: number,
     lng: number,
     radiusInMeters: number = 5000,
+    category?: Category,
+    deityId?: string,
   ) {
-    const locations: any[] = await this.prisma.$queryRaw`
-      SELECT l.id, l.name, l.name_ml as "nameMl", l.category, l.description, l.description_ml as "descriptionMl", 
-             l.address_text as "addressText", l.address_text_ml as "addressTextMl",
-             l.latitude, l.longitude, l.average_rating as "averageRating", 
-             l.total_ratings as "totalRatings",
-             ST_Distance(l.coords, ST_MakePoint(${lng}, ${lat})::geography) as distance
-      FROM "Location" l
-      WHERE ST_DWithin(l.coords, ST_MakePoint(${lng}, ${lat})::geography, ${radiusInMeters})
-      ORDER BY distance ASC
-    `;
-    return locations.map((l) => this.localizeLocation(l, lang));
+    // 1. Get IDs and distances using PostGIS
+    const query = category
+      ? this.prisma.$queryRaw`
+          SELECT l.id,
+                 ST_Distance(l.coords, ST_MakePoint(${lng}, ${lat})::geography) as distance
+          FROM "Location" l
+          WHERE ST_DWithin(l.coords, ST_MakePoint(${lng}, ${lat})::geography, ${radiusInMeters})
+          AND l.category = ${category}::"Category"
+          ORDER BY distance ASC
+        `
+      : this.prisma.$queryRaw`
+          SELECT l.id,
+                 ST_Distance(l.coords, ST_MakePoint(${lng}, ${lat})::geography) as distance
+          FROM "Location" l
+          WHERE ST_DWithin(l.coords, ST_MakePoint(${lng}, ${lat})::geography, ${radiusInMeters})
+          ORDER BY distance ASC
+        `;
+
+    const nearbyResults: any[] = await (query as any);
+
+    if (nearbyResults.length === 0) {
+      return [];
+    }
+
+    const ids = nearbyResults.map((r) => r.id);
+    const distanceMap = new Map(nearbyResults.map((r) => [r.id, r.distance]));
+
+    // 2. Build where clause with deity filter if needed
+    const whereClause: any = { id: { in: ids } };
+
+    if (deityId && !isNaN(Number(deityId))) {
+      whereClause.temple = {
+        deities: {
+          some: {
+            deityId: Number(deityId),
+          },
+        },
+      };
+    }
+
+    // 3. Fetch full details using Prisma to ensure all relations (Hotel, Restaurant, Media) are loaded
+    const locations = await this.prisma.location.findMany({
+      where: whereClause,
+      include: {
+        temple: {
+          include: {
+            deities: {
+              include: { deity: true },
+            },
+          },
+        },
+        hotel: true,
+        restaurant: true,
+        media: true, // Fetch photos!
+        reviews: {
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    // 4. Merge distance and sort
+    const locationsWithDistance = locations.map((l) => ({
+      ...l,
+      distance: distanceMap.get(l.id),
+    }));
+
+    locationsWithDistance.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+
+    return locationsWithDistance.map((l) => this.localizeLocation(l, lang));
   }
 
   async getDeities(lang: string) {
@@ -98,13 +172,17 @@ export class LocationsService {
         ],
       },
       include: {
-        temple: true,
+        temple: {
+          include: {
+            deities: { include: { deity: true } },
+          },
+        },
+        hotel: true,
+        restaurant: true,
         media: true,
       },
     });
-    return locations.map((l) =>
-      this.localizeLocation(this.mapLocationFields(l), lang),
-    );
+    return locations.map((l) => this.localizeLocation(l, lang));
   }
 
   async getTempleDetails(lang: string, id: string) {
@@ -118,6 +196,8 @@ export class LocationsService {
             },
           },
         },
+        hotel: true,
+        restaurant: true,
         festivals: true,
         reviews: {
           include: { user: true },

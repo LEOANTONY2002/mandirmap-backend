@@ -9,9 +9,10 @@ export class LocationsController {
   @Get()
   async findAll(
     @Query('category') category?: Category,
+    @Query('deityId') deityId?: string,
     @Headers('accept-language') lang: string = 'en',
   ) {
-    return this.locationsService.findAll(lang, category);
+    return this.locationsService.findAll(lang, category, deityId);
   }
 
   @Get('search')
@@ -45,6 +46,8 @@ export class LocationsController {
     @Query('lat') lat: string,
     @Query('lng') lng: string,
     @Query('radius') radius?: string,
+    @Query('category') category?: Category,
+    @Query('deityId') deityId?: string,
     @Headers('accept-language') lang: string = 'en',
   ) {
     return this.locationsService.findNearby(
@@ -52,6 +55,8 @@ export class LocationsController {
       parseFloat(lat),
       parseFloat(lng),
       radius ? parseInt(radius) : 5000,
+      category,
+      deityId,
     );
   }
 

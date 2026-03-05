@@ -84,6 +84,7 @@ enum Category {
   TEMPLE
   RESTAURANT
   HOTEL
+  RENTAL
   TRAVEL_HUB
   POOJARI
   SHOP

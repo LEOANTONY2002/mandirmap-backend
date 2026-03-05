@@ -46,158 +46,201 @@ async function main() {
     deityRecords.push(d);
   }
 
-  // 3. Create Locations (Temples)
-  const temples = [
+  // Helper to generate clustered coordinates
+  const generateCluster = (
+    baseLat: number,
+    baseLng: number,
+    count: number,
+    spread: number = 0.02,
+  ) => {
+    return Array.from({ length: count }).map((_, i) => ({
+      lat: baseLat + (Math.random() - 0.5) * spread,
+      lng: baseLng + (Math.random() - 0.5) * spread,
+    }));
+  };
+
+  const safeCreateLocation = async (data: any) => {
+    try {
+      await prisma.location.upsert({
+        where: { id: data.name },
+        update: {},
+        create: { ...data, id: data.name },
+      });
+    } catch (e) {
+      console.log(`Skipping duplicate or error for ${data.name}`);
+    }
+  };
+
+  // 3. Create Locations (Temples) - 20+
+  const baseTemples = [
     {
-      name: 'Sree Subrahmanya Swamy Temple',
-      nameMl: 'ശ്രീ സുബ്രഹ്മണ്യ സ്വാമി ക്ഷേത്രം',
-      addressText: 'Payyanur, Kannur, Kerala',
-      addressTextMl: 'പയ്യന്നൂർ, കണ്ണൂർ, കേരളം',
-      district: 'Kannur',
-      districtMl: 'കണ്ണൂർ',
-      state: 'Kerala',
-      stateMl: 'കേരളം',
+      name: 'Sree Subrahmanya Swamy',
       lat: 12.1031,
       lng: 75.2023,
-      history: 'A historic temple dedicated to Lord Subrahmanya...',
-      historyMl:
-        'ശ്രീ സുബ്രഹ്മണ്യ സ്വാമിക്ക് സമർപ്പിച്ചിരിക്കുന്ന ഒരു ചരിത്രപ്രസിദ്ധമായ ക്ഷേത്രം...',
+      dist: 'Kannur',
     },
     {
-      name: 'Parassinikadavu Muthappan Temple',
-      nameMl: 'പറശ്ശിനിക്കടവ് മുത്തപ്പൻ ക്ഷേത്രം',
-      addressText: 'Parassinikadavu, Kannur, Kerala',
-      addressTextMl: 'പറശ്ശിനിക്കടവ്, കണ്ണൂർ, കേരളം',
-      district: 'Kannur',
-      districtMl: 'കണ്ണൂർ',
-      state: 'Kerala',
-      stateMl: 'കേരളം',
+      name: 'Parassinikadavu Muthappan',
       lat: 11.9839,
       lng: 75.4011,
-      history: 'Famous for Theyyam performance...',
-      historyMl: 'തെയ്യം കെട്ടിയാടുന്നതിന് പ്രശസ്തമായ ക്ഷേത്രം...',
+      dist: 'Kannur',
+    },
+    { name: 'Guruvayur Temple', lat: 10.5946, lng: 76.0402, dist: 'Thrissur' },
+    {
+      name: 'Sabarimala Temple',
+      lat: 9.4402,
+      lng: 77.0696,
+      dist: 'Pathanamthitta',
     },
     {
-      name: 'Guruvayur Temple',
-      nameMl: 'ഗുരുവായൂർ ക്ഷേത്രം',
-      addressText: 'Guruvayur, Thrissur, Kerala',
-      addressTextMl: 'ഗുരുവായൂർ, തൃശൂർ, കേരളം',
-      district: 'Thrissur',
-      districtMl: 'തൃശൂർ',
-      state: 'Kerala',
-      stateMl: 'കേരളം',
-      lat: 10.5946,
-      lng: 76.0402,
-      history: 'Dedicated to Lord Guruvayurappan...',
-      historyMl: 'ശ്രീ ഗുരൂവായൂരപ്പന് സമർപ്പിച്ചിരിക്കുന്നത്...',
+      name: 'Padmanabhaswamy Temple',
+      lat: 8.4831,
+      lng: 76.9436,
+      dist: 'Trivandrum',
+    },
+    {
+      name: 'Chottanikkara Bhagavathy',
+      lat: 9.9329,
+      lng: 76.3913,
+      dist: 'Ernakulam',
     },
   ];
 
-  const locRecords: any[] = [];
-  for (const t of temples) {
-    const loc = await prisma.location.upsert({
-      where: { id: t.name },
-      update: {
-        district: t.district,
-        districtMl: t.districtMl,
-        state: t.state,
-        stateMl: t.stateMl,
-      },
-      create: {
-        id: t.name,
-        name: t.name,
-        nameMl: t.nameMl,
-        category: Category.TEMPLE,
-        addressText: t.addressText,
-        addressTextMl: t.addressTextMl,
-        district: t.district,
-        districtMl: t.districtMl,
-        state: t.state,
-        stateMl: t.stateMl,
-        latitude: t.lat,
-        longitude: t.lng,
-        temple: {
-          create: {
-            history: t.history,
-            historyMl: t.historyMl,
-            openTime: '5:00 AM',
-            closeTime: '8:00 PM',
-            vazhipaduData: [
-              { name: 'Pushpanjali', price: 20 },
-              { name: 'Neyvilakku', price: 50 },
-            ],
+  const templeRecords: any[] = [];
+  let templeCount = 0;
+
+  for (const base of baseTemples) {
+    // Create the main temple
+    templeCount++;
+    try {
+      const t = await prisma.location.upsert({
+        where: { id: base.name },
+        update: {},
+        create: {
+          id: base.name,
+          name: base.name,
+          category: Category.TEMPLE,
+          addressText: `${base.dist}, Kerala`,
+          district: base.dist,
+          state: 'Kerala',
+          latitude: base.lat,
+          longitude: base.lng,
+          temple: {
+            create: {
+              history: `Historic temple in ${base.dist}...`,
+              openTime: '5:00 AM',
+              closeTime: '8:00 PM',
+              vazhipaduData: [{ name: 'Pushpanjali', price: 20 }],
+            },
+          },
+          media: {
+            create: {
+              url: 'https://images.unsplash.com/photo-1544198365-f5d60b6d8190?w=800&q=80',
+              type: MediaType.IMAGE,
+              user: { connect: { id: user.id } },
+            },
           },
         },
-      },
-    });
-    locRecords.push(loc);
+      });
+      templeRecords.push(t);
+    } catch (e) {
+      console.log(`Main temple ${base.name} might already exist or error.`);
+    }
 
-    // Link some deities to temples
-    await (prisma as any).templeDeity.upsert({
-      where: {
-        templeId_deityId: {
-          templeId: loc.id,
-          deityId: deityRecords[0].id,
+    // Create 3-4 nearby smaller temples for each main temple
+    const nearbyCoords = generateCluster(base.lat, base.lng, 4);
+    for (const [i, coord] of nearbyCoords.entries()) {
+      templeCount++;
+      const name = `Nearby Temple ${templeCount} - ${base.dist}`;
+      await safeCreateLocation({
+        name: name,
+        category: Category.TEMPLE,
+        addressText: `Near ${base.name}, ${base.dist}`,
+        district: base.dist,
+        state: 'Kerala',
+        latitude: coord.lat,
+        longitude: coord.lng,
+        temple: {
+          create: {
+            history: 'A smaller shrine nearby...',
+            openTime: '6:00 AM',
+            closeTime: '7:30 PM',
+          },
         },
-      },
-      update: {},
-      create: {
-        templeId: loc.id,
-        deityId: deityRecords[0].id,
-      },
-    });
+        media: {
+          create: {
+            url: 'https://images.unsplash.com/photo-1623838615748-0c6756857643?w=800&q=80',
+            type: MediaType.IMAGE,
+            user: { connect: { id: user.id } },
+          },
+        },
+      });
+    }
 
-    // 4. Create Festivals
-    await (prisma as any).festival.create({
-      data: {
-        name: `${t.name} Mahotsavam`,
-        nameMl: 'മഹോത്സവം',
-        description: 'A grand celebration featuring sacred rituals.',
-        startDate: new Date('2026-02-20'),
-        endDate: new Date('2026-02-25'),
-        locationId: loc.id,
-        deityId: deityRecords[0].id,
-        photoUrl:
-          'https://images.unsplash.com/photo-1590760461230-8f453ddb8c0d?w=800&q=80',
-      },
-    });
+    // Link some deities to the main temple (using the first available deity for simplicity)
+    if (deityRecords.length > 0) {
+      try {
+        await (prisma as any).templeDeity.upsert({
+          where: {
+            templeId_deityId: {
+              templeId: base.name,
+              deityId: deityRecords[0].id,
+            },
+          },
+          update: {},
+          create: {
+            templeId: base.name,
+            deityId: deityRecords[0].id,
+          },
+        });
+      } catch (e) {}
+    }
   }
 
-  // 5. Create Hotels (Rentals)
-  const hotels = [
-    {
-      name: 'Temple View Residency',
-      address: 'Near Payyanur Temple, Kannur',
-      district: 'Kannur',
-      lat: 12.1035,
-      lng: 75.2025,
-      price: 1200,
-    },
-    {
-      name: 'Thrissur Comfort Stay',
-      address: 'Near Guruvayur Temple, Thrissur',
-      district: 'Thrissur',
-      lat: 10.595,
-      lng: 76.041,
-      price: 1500,
-    },
-  ];
+  // 4. Create Festivals - Each main temple gets a festival
+  for (const t of templeRecords) {
+    if (!t) continue;
+    try {
+      if (deityRecords.length > 0) {
+        await (prisma as any).festival.create({
+          data: {
+            name: `${t.name} Mahotsavam`,
+            nameMl: 'മഹോത്സവം',
+            description: 'A grand celebration featuring sacred rituals.',
+            startDate: new Date('2026-02-20'),
+            endDate: new Date('2026-02-25'),
+            locationId: t.id,
+            deityId: deityRecords[0].id,
+            photoUrl:
+              'https://images.unsplash.com/photo-1590760461230-8f453ddb8c0d?w=800&q=80',
+          },
+        });
+      }
+    } catch (e) {
+      console.log(`Festival for ${t.name} might already exist or error.`);
+    }
+  }
 
-  for (const h of hotels) {
-    await prisma.location.create({
-      data: {
-        name: h.name,
+  // 5. Create Hotels - 10+ (Clustered)
+  let hotelCount = 0;
+  for (const base of baseTemples) {
+    const coords = generateCluster(base.lat, base.lng, 2, 0.015);
+    for (const coord of coords) {
+      hotelCount++;
+      await safeCreateLocation({
+        name: `Royal Hotel ${base.dist} ${hotelCount}`,
         category: Category.HOTEL,
-        addressText: h.address,
-        district: h.district,
+        addressText: `Luxury Stay near ${base.name}`,
+        district: base.dist,
         state: 'Kerala',
-        latitude: h.lat,
-        longitude: h.lng,
+        latitude: coord.lat,
+        longitude: coord.lng,
         hotel: {
           create: {
-            pricePerDay: h.price,
-            amenities: ['Free Wifi', 'Pure Veg', 'AC'],
-            contactPhone: '+919999999999',
+            pricePerDay: 2500 + Math.floor(Math.random() * 5000),
+            amenities: ['Wifi', 'AC', 'Pool', 'Breakfast', 'Parking'],
+            contactPhone: '+919876543210',
+            whatsapp: '+919876543210',
           },
         },
         media: {
@@ -207,35 +250,62 @@ async function main() {
             user: { connect: { id: user.id } },
           },
         },
-      },
-    });
+      });
+    }
   }
 
-  // 6. Create Restaurants
-  const restaurants = [
-    {
-      name: 'Annapoorna Pure Veg',
-      address: 'Main Road, Payyanur',
-      district: 'Kannur',
-      lat: 12.102,
-      lng: 75.201,
-    },
-  ];
-
-  for (const r of restaurants) {
-    await prisma.location.create({
-      data: {
-        name: r.name,
-        category: Category.RESTAURANT,
-        addressText: r.address,
-        district: r.district,
+  // 5.5 Create Rentals/Rooms - 10+ (Clustered)
+  let rentalCount = 0;
+  for (const base of baseTemples) {
+    const coords = generateCluster(base.lat, base.lng, 3, 0.01);
+    for (const coord of coords) {
+      rentalCount++;
+      await safeCreateLocation({
+        name: `Sree ${base.dist} Lodge ${rentalCount}`,
+        category: Category.RENTAL,
+        addressText: `Affordable rooms near ${base.name}`,
+        district: base.dist,
         state: 'Kerala',
-        latitude: r.lat,
-        longitude: r.lng,
+        latitude: coord.lat,
+        longitude: coord.lng,
+        hotel: {
+          // Reusing Hotel model for simplicity as schema matches
+          create: {
+            pricePerDay: 500 + Math.floor(Math.random() * 800),
+            amenities: ['Basic Bed', 'Fan', 'Shared Bath'],
+            contactPhone: '+919876543211',
+            whatsapp: '+919876543211',
+          },
+        },
+        media: {
+          create: {
+            url: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800&q=80',
+            type: MediaType.IMAGE,
+            user: { connect: { id: user.id } },
+          },
+        },
+      });
+    }
+  }
+
+  // 6. Create Restaurants - 20+ (Clustered)
+  let restCount = 0;
+  for (const base of baseTemples) {
+    const coords = generateCluster(base.lat, base.lng, 4, 0.015);
+    for (const coord of coords) {
+      restCount++;
+      await safeCreateLocation({
+        name: `Tasty Bites ${base.dist} ${restCount}`,
+        category: Category.RESTAURANT,
+        addressText: `Opposite ${base.name}`,
+        district: base.dist,
+        state: 'Kerala',
+        latitude: coord.lat,
+        longitude: coord.lng,
         restaurant: {
           create: {
-            isPureVeg: true,
-            menuItems: ['Sadhya', 'Dosa', 'Idli'],
+            isPureVeg: Math.random() > 0.3, // 70% chance Veg
+            menuItems: ['Meals', 'Biriyani', 'Tea', 'Snacks'],
           },
         },
         media: {
@@ -245,46 +315,63 @@ async function main() {
             user: { connect: { id: user.id } },
           },
         },
-      },
-    });
+      });
+    }
   }
 
-  // 4. Create Astrologers
-  const astrologers = [
-    {
-      name: 'Dr. K.P. Sharma',
-      exp: 15,
-      rate: 500,
-      rating: 4.8,
-      lat: 11.8745,
-      lng: 75.3704,
-    },
-    {
-      name: 'Guru Vishwanath',
-      exp: 25,
-      rate: 1000,
-      rating: 4.9,
-      lat: 11.9,
-      lng: 75.4,
-    },
+  // 7. Create Astrologers - 20+
+  const astroBase = [
+    { baseLat: 11.8745, baseLng: 75.3704, count: 5 }, // Kannur
+    { baseLat: 10.5, baseLng: 76.2, count: 5 }, // Thrissur
+    { baseLat: 8.5, baseLng: 76.9, count: 5 }, // Trivandrum
+    { baseLat: 11.25, baseLng: 75.77, count: 5 }, // Kozhikode
   ];
 
-  for (const a of astrologers) {
-    await prisma.astrologer.create({
-      data: {
-        name: a.name,
-        experienceYears: a.exp,
-        hourlyRate: a.rate,
-        rating: a.rating,
-        latitude: a.lat,
-        longitude: a.lng,
-        languages: ['English', 'Malayalam', 'Hindi'],
-        bio: 'Expert in Vedic Astrology and Palmistry.',
-      },
-    });
+  let astroCount = 0;
+  for (const area of astroBase) {
+    const coords = generateCluster(
+      area.baseLat,
+      area.baseLng,
+      area.count,
+      0.05,
+    );
+    for (const coord of coords) {
+      astroCount++;
+      try {
+        await prisma.astrologer.upsert({
+          where: { id: `astro_${astroCount}` },
+          update: {},
+          create: {
+            id: `astro_${astroCount}`,
+            name: `Jyothishi ${astroCount}`,
+            experienceYears: 5 + Math.floor(Math.random() * 30),
+            hourlyRate: 200 + Math.floor(Math.random() * 1000),
+            rating: 3 + Math.random() * 2,
+            latitude: coord.lat,
+            longitude: coord.lng,
+            languages: ['Malayalam', 'English'],
+            bio: 'Vedic scholar with deep knowledge.',
+          },
+        });
+      } catch (e) {
+        // Fallback create if schema doesn't support ID override or upsert fails
+        await prisma.astrologer.create({
+          data: {
+            name: `Jyothishi ${astroCount}`,
+            experienceYears: 5 + Math.floor(Math.random() * 30),
+            hourlyRate: 200 + Math.floor(Math.random() * 1000),
+            rating: 3 + Math.random() * 2,
+            latitude: coord.lat,
+            longitude: coord.lng,
+            languages: ['Malayalam', 'English'],
+            bio: 'Vedic scholar with deep knowledge.',
+          },
+        });
+      }
+    }
   }
 
-  // 7. Update PostGIS coordinates for all locations and astrologers
+  // 8. Update PostGIS coordinates for all locations and astrologers
   console.log('Updating PostGIS coordinates...');
   await prisma.$executeRawUnsafe(
     `UPDATE "Location" SET coords = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography;`,
