@@ -29,6 +29,11 @@ export class LocationsController {
     return this.locationsService.getDeities(lang);
   }
 
+  @Get('health')
+  healthCheck() {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+  }
+
   @Get('districts')
   async getDistricts(
     @Query('state') state?: string,
