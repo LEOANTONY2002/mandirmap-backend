@@ -44,12 +44,8 @@ export class MediaService {
     });
   }
 
-  async uploadAndSave(
-    file: Express.Multer.File,
-    type: MediaType,
-    locationId?: string,
-  ) {
-    const key = `media/${Date.now()}-${file.originalname}`;
+  async uploadFile(file: Express.Multer.File, folder: string = 'media') {
+    const key = `${folder}/${Date.now()}-${file.originalname}`;
 
     await this.s3Client.send(
       new PutObjectCommand({
@@ -60,7 +56,15 @@ export class MediaService {
       }),
     );
 
-    const url = `${this.configService.get('CLOUDFLARE_R2_PUBLIC_DOMAIN')}/${key}`;
+    return `${this.configService.get('CLOUDFLARE_R2_PUBLIC_DOMAIN')}/${key}`;
+  }
+
+  async uploadAndSave(
+    file: Express.Multer.File,
+    type: MediaType,
+    locationId?: string,
+  ) {
+    const url = await this.uploadFile(file);
 
     // For now we placeholder the user ID since we need a user in DB to link
     // In production, this would come from the AuthGuard's decoded token
