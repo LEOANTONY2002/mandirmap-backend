@@ -12,15 +12,21 @@ export class AstrologersController {
 
   @Get('nearby')
   async findNearby(
-    @Query('lat') lat: string,
-    @Query('lng') lng: string,
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+    @Query('district') district?: string,
     @Query('radius') radius?: string,
   ) {
-    return this.astrologersService.findNearby(
-      parseFloat(lat),
-      parseFloat(lng),
-      radius ? parseInt(radius) : 20000,
-    );
+    if (lat && lng) {
+      return this.astrologersService.findNearby(
+        parseFloat(lat),
+        parseFloat(lng),
+        radius ? parseInt(radius) : 20000,
+      );
+    } else if (district) {
+      return this.astrologersService.findByDistrict(district);
+    }
+    return this.astrologersService.findAll();
   }
 
   @Get(':id')

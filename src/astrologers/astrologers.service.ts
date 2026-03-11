@@ -16,12 +16,19 @@ export class AstrologersService {
     return this.prisma.$queryRaw`
       SELECT a.id, a.name, a.experience_years as "experienceYears", 
              a.languages, a.hourly_rate as "hourlyRate", a.bio, a.rating,
-             a.latitude, a.longitude,
+             a.latitude, a.longitude, a.district, a.state,
              ST_Distance(a.coords, ST_MakePoint(${lng}, ${lat})::geography) as distance
       FROM "Astrologer" a
       WHERE ST_DWithin(a.coords, ST_MakePoint(${lng}, ${lat})::geography, ${radiusInMeters})
       ORDER BY distance ASC
     `;
+  }
+
+  async findByDistrict(district: string) {
+    return this.prisma.astrologer.findMany({
+      where: { district: { equals: district, mode: 'insensitive' } },
+      orderBy: { rating: 'desc' },
+    });
   }
 
   async findOne(id: string) {

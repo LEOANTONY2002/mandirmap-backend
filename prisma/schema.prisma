@@ -169,6 +169,8 @@ model Astrologer {
   rating          Float    @default(0.0)
   latitude        Float
   longitude       Float
+  district        String?
+  state           String?
   coords          Unsupported("geography(Point, 4326)")? @map("coords")
 
   @@index([coords], name: "astrologer_coords_idx", type: Gist)
