@@ -162,17 +162,24 @@ model Restaurant {
 model Astrologer {
   id              String   @id @default(uuid())
   name            String
+  avatarUrl       String?  @map("avatar_url")
   experienceYears Int      @map("experience_years")
   languages       String[]
   hourlyRate      Decimal  @map("hourly_rate") @db.Decimal(10, 2)
   bio             String?  @db.Text
   rating          Float    @default(0.0)
+  totalRatings    Int      @default(0) @map("total_ratings")
+  isVerified      Boolean  @default(false) @map("is_verified")
+  phoneNumber     String?  @map("phone_number")
+  whatsappNumber  String?  @map("whatsapp_number")
+  photoUrls       String[] @map("photo_urls")
   latitude        Float
   longitude       Float
   district        String?
   state           String?
   coords          Unsupported("geography(Point, 4326)")? @map("coords")
 
+  reviews         Review[]
   @@index([coords], name: "astrologer_coords_idx", type: Gist)
 }
 
@@ -199,8 +206,10 @@ model Review {
   id            String   @id @default(uuid())
   userId        String   @map("user_id")
   user          User     @relation(fields: [userId], references: [id])
-  locationId    String   @map("location_id")
-  location      Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  locationId    String?  @map("location_id")
+  location      Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  astrologerId  String?  @map("astrologer_id")
+  astrologer    Astrologer? @relation(fields: [astrologerId], references: [id], onDelete: Cascade)
   rating        Int
   comment       String?  @db.Text
   createdAt     DateTime @default(now()) @map("created_at")

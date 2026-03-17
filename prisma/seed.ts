@@ -605,19 +605,65 @@ async function main() {
   console.log('✅ 30 Festivals linked to cities.');
 
   // 7. Astrologers (5+ per city = 25+ Total)
+  const astNames = [
+    'Bhaskaran',
+    'Raghavan',
+    'Sreedharan',
+    'Damodaran',
+    'Parameshwaran',
+    'Achuthan',
+  ];
+  const astrologerPhotos = [
+    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
+  ];
+
   for (const c of districts) {
     const cityCoord = templates.find((t) => t.dist === c.name)!;
     for (let i = 0; i < 6; i++) {
-      await prisma.astrologer.create({
+      const ast = await prisma.astrologer.create({
         data: {
-          name: `Pandit ${c.name} ${i + 1}`,
-          experienceYears: rand(15, 40),
-          languages: ['Malayalam', 'English', 'Hindi'],
-          hourlyRate: 1000,
-          bio: 'Vedanga expert.',
-          rating: 4.9,
+          name:
+            i === 0 ? 'Bhaskaran' : `Pandit ${astNames[i % astNames.length]}`,
+          avatarUrl: pick(astrologerPhotos, i),
+          experienceYears: rand(10, 45),
+          languages: ['Malayalam', 'English'],
+          hourlyRate: 500,
+          bio: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.",
+          rating: 4.5 + rand(0, 5) / 10,
+          totalRatings: rand(20, 100),
+          isVerified: true,
+          phoneNumber: '+919999999999',
+          whatsappNumber: '+919999999999',
+          photoUrls: [
+            'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80',
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
+          ],
           latitude: cityCoord.lat + rand(-50, 50) / 1000,
           longitude: cityCoord.lng + rand(-50, 50) / 1000,
+          district: c.name,
+          state: 'Kerala',
+        },
+      });
+
+      // Add sample reviews
+      await prisma.review.create({
+        data: {
+          userId: user.id,
+          astrologerId: ast.id,
+          rating: 5,
+          comment:
+            'text used by designers, web developers, and publishers to preview layouts and typography before final content is ready',
+        },
+      });
+      await prisma.review.create({
+        data: {
+          userId: user.id,
+          astrologerId: ast.id,
+          rating: 4,
+          comment: 'Good experience, but wait time was long.',
         },
       });
     }

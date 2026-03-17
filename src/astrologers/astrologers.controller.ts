@@ -1,5 +1,17 @@
-import { Controller, Get, Query, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Query,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { AstrologersService } from './astrologers.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('astrologers')
 export class AstrologersController {
@@ -32,5 +44,47 @@ export class AstrologersController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.astrologersService.findOne(id);
+  }
+
+  @Post(':id/reviews')
+  @UseGuards(JwtAuthGuard)
+  async addReview(
+    @Param('id') id: string,
+    @Req() req,
+    @Body('rating') rating: number,
+    @Body('comment') comment?: string,
+  ) {
+    const userId = req.user.id;
+    return this.astrologersService.addReview(id, userId, rating, comment);
+  }
+
+  @Put(':id/reviews/:reviewId')
+  @UseGuards(JwtAuthGuard)
+  async updateReview(
+    @Param('id') id: string,
+    @Param('reviewId') reviewId: string,
+    @Req() req,
+    @Body('rating') rating: number,
+    @Body('comment') comment?: string,
+  ) {
+    const userId = req.user.id;
+    return this.astrologersService.updateReview(
+      reviewId,
+      id,
+      userId,
+      rating,
+      comment,
+    );
+  }
+
+  @Delete(':id/reviews/:reviewId')
+  @UseGuards(JwtAuthGuard)
+  async deleteReview(
+    @Param('id') id: string,
+    @Param('reviewId') reviewId: string,
+    @Req() req,
+  ) {
+    const userId = req.user.id;
+    return this.astrologersService.deleteReview(reviewId, id, userId);
   }
 }
