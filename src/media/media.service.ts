@@ -62,21 +62,17 @@ export class MediaService {
   async uploadAndSave(
     file: Express.Multer.File,
     type: MediaType,
+    uploaderId: string,
     locationId?: string,
   ) {
     const url = await this.uploadFile(file);
-
-    // For now we placeholder the user ID since we need a user in DB to link
-    // In production, this would come from the AuthGuard's decoded token
-    const firstUser = await this.prisma.user.findFirst();
-    if (!firstUser) throw new Error('No user found to attribute media to');
 
     return this.prisma.mediaContent.create({
       data: {
         url,
         type,
         locationId,
-        uploaderId: firstUser.id,
+        uploaderId,
         thumbnailUrl:
           type === MediaType.VIDEO ? url.replace('.mp4', '.jpg') : null, // Simplistic placeholder
       },

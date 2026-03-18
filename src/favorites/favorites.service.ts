@@ -38,6 +38,22 @@ export class FavoritesService {
         location: {
           include: {
             temple: true,
+            hotel: {
+              include: {
+                amenities: {
+                  include: {
+                    amenity: true,
+                  },
+                },
+              },
+            },
+            restaurant: {
+              include: {
+                menuItems: {
+                  orderBy: { name: 'asc' },
+                },
+              },
+            },
             media: true,
           },
         },

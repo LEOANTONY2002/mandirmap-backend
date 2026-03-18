@@ -38,8 +38,22 @@ export class LocationsService {
             },
           },
         },
-        hotel: true,
-        restaurant: true,
+        hotel: {
+          include: {
+            amenities: {
+              include: {
+                amenity: true,
+              },
+            },
+          },
+        },
+        restaurant: {
+          include: {
+            menuItems: {
+              orderBy: { name: 'asc' },
+            },
+          },
+        },
         media: true, // Including media to show photos in list
       },
     });
@@ -105,8 +119,22 @@ export class LocationsService {
             },
           },
         },
-        hotel: true,
-        restaurant: true,
+        hotel: {
+          include: {
+            amenities: {
+              include: {
+                amenity: true,
+              },
+            },
+          },
+        },
+        restaurant: {
+          include: {
+            menuItems: {
+              orderBy: { name: 'asc' },
+            },
+          },
+        },
         media: true, // Fetch photos!
         reviews: {
           take: 5,
@@ -197,8 +225,22 @@ export class LocationsService {
             deities: { include: { deity: true } },
           },
         },
-        hotel: true,
-        restaurant: true,
+        hotel: {
+          include: {
+            amenities: {
+              include: {
+                amenity: true,
+              },
+            },
+          },
+        },
+        restaurant: {
+          include: {
+            menuItems: {
+              orderBy: { name: 'asc' },
+            },
+          },
+        },
         media: true,
       },
     });
@@ -216,8 +258,22 @@ export class LocationsService {
             },
           },
         },
-        hotel: true,
-        restaurant: true,
+        hotel: {
+          include: {
+            amenities: {
+              include: {
+                amenity: true,
+              },
+            },
+          },
+        },
+        restaurant: {
+          include: {
+            menuItems: {
+              orderBy: { name: 'asc' },
+            },
+          },
+        },
         festivals: true,
         reviews: {
           include: { user: true },

@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Req,
   UseInterceptors,
   UploadedFile,
   UseGuards,
@@ -28,12 +29,16 @@ export class MediaController {
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   async uploadMedia(
+    @Req() req,
     @UploadedFile() file: Express.Multer.File,
     @Query('type') type: MediaType,
     @Query('locationId') locationId?: string,
   ) {
-    // In a real app, we'd get the userId from the request (via Guard)
-    // and save the record to Prisma.
-    return this.mediaService.uploadAndSave(file, type, locationId);
+    return this.mediaService.uploadAndSave(
+      file,
+      type,
+      req.user.id,
+      locationId,
+    );
   }
 }

@@ -148,14 +148,39 @@ model Hotel {
   pricePerDay     Decimal  @map("price_per_day") @db.Decimal(10, 2)
   contactPhone    String?  @map("contact_phone")
   whatsapp        String?
-  amenities       Json?    
+  amenities       HotelAmenity[]
 }
 
 model Restaurant {
   locationId      String   @id @map("location_id")
   location        Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
   isPureVeg       Boolean  @default(true) @map("is_pure_veg")
-  menuItems       Json?    @map("menu_items")
+  menuItems       RestaurantMenuItem[]
+}
+
+model Amenity {
+  id              Int            @id @default(autoincrement())
+  title           String
+  image           String?
+  hotels          HotelAmenity[]
+}
+
+model HotelAmenity {
+  hotelLocationId String         @map("hotel_location_id")
+  amenityId       Int            @map("amenity_id")
+  hotel           Hotel          @relation(fields: [hotelLocationId], references: [locationId], onDelete: Cascade)
+  amenity         Amenity        @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([hotelLocationId, amenityId])
+}
+
+model RestaurantMenuItem {
+  id                 String      @id @default(uuid())
+  restaurantLocationId String    @map("restaurant_location_id")
+  restaurant         Restaurant  @relation(fields: [restaurantLocationId], references: [locationId], onDelete: Cascade)
+  name               String
+  image              String?
+  price              Decimal     @db.Decimal(10, 2)
 }
 
 // --- 6. Astrology ---

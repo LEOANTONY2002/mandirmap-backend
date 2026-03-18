@@ -42,6 +42,13 @@ const RESTAURANT_IMAGES = [
   'https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=800&q=80',
 ];
 
+const MENU_ITEM_IMAGES = [
+  'https://images.unsplash.com/photo-1630383249896-424e482df921?w=800&q=80',
+  'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=800&q=80',
+  'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=800&q=80',
+  'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=800&q=80',
+];
+
 async function main() {
   console.log(
     '🏛️  Generating ULTIMATE KANNUR-CENTRIC Dataset (200+ Records)...',
@@ -54,9 +61,12 @@ async function main() {
   await prisma.festival.deleteMany();
   await prisma.templeDeity.deleteMany();
   await prisma.mediaContent.deleteMany();
+  await prisma.hotelAmenity.deleteMany();
+  await prisma.restaurantMenuItem.deleteMany();
   await prisma.temple.deleteMany();
   await prisma.hotel.deleteMany();
   await prisma.restaurant.deleteMany();
+  await prisma.amenity.deleteMany();
   await prisma.location.deleteMany();
   await prisma.deity.deleteMany();
   await prisma.astrologer.deleteMany();
@@ -113,6 +123,45 @@ async function main() {
     { name: 'Ernakulam', ml: 'എറണാകുളം' },
     { name: 'Kozhikode', ml: 'കോഴിക്കോട്' },
   ];
+
+  const amenityDefs = [
+    {
+      title: '150 Mtr from Temple',
+      image:
+        'https://img.icons8.com/fluency-systems-filled/96/FA6A35/marker.png',
+    },
+    {
+      title: 'Breakfast Included',
+      image:
+        'https://img.icons8.com/fluency-systems-filled/96/FA6A35/bread.png',
+    },
+    {
+      title: 'Cleaned Rooms',
+      image:
+        'https://img.icons8.com/fluency-systems-filled/96/FA6A35/room.png',
+    },
+    {
+      title: '3 BHK 3 Bathrooms',
+      image:
+        'https://img.icons8.com/fluency-systems-filled/96/FA6A35/home.png',
+    },
+    {
+      title: 'Free WiFi Available',
+      image:
+        'https://img.icons8.com/fluency-systems-filled/96/FA6A35/wifi.png',
+    },
+    {
+      title: 'Air Condition',
+      image:
+        'https://img.icons8.com/fluency-systems-filled/96/FA6A35/air-conditioner.png',
+    },
+  ];
+
+  const amenities: Array<{ id: number; title: string; image: string | null }> =
+    [];
+  for (const amenity of amenityDefs) {
+    amenities.push(await prisma.amenity.create({ data: amenity }));
+  }
 
   // 4. Temples - Clustered for "Nearby" functionality (35 Total, 20 in Kannur)
   const templates = [
@@ -515,7 +564,7 @@ async function main() {
     // 4 Accommodations per temple
     for (let i = 0; i < 4; i++) {
       const cat = pick([Category.HOTEL, Category.RENTAL], i);
-      await prisma.location.create({
+      const location = await prisma.location.create({
         data: {
           name: `${t.name} ${i === 0 ? 'International' : i === 1 ? 'Residency' : i === 2 ? 'Lodge' : 'Pilgrim House'}`,
           category: cat,
@@ -527,8 +576,8 @@ async function main() {
           hotel: {
             create: {
               pricePerDay: new Prisma.Decimal(rand(400, 5000)),
-              amenities: ['AC', 'WiFi', 'Dining'] as any,
               contactPhone: '+914970000000',
+              whatsapp: '+919999999999',
             },
           },
           media: {
@@ -542,10 +591,21 @@ async function main() {
           },
         },
       });
+
+      const selectedAmenities = [...amenities]
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 6);
+
+      await prisma.hotelAmenity.createMany({
+        data: selectedAmenities.map((amenity) => ({
+          hotelLocationId: location.id,
+          amenityId: amenity.id,
+        })),
+      });
     }
     // 2 Restaurants per temple
     for (let i = 0; i < 2; i++) {
-      await prisma.location.create({
+      const location = await prisma.location.create({
         data: {
           name: `${t.name} ${i === 0 ? 'Bhojanalaya' : 'Udupi Veg'}`,
           category: Category.RESTAURANT,
@@ -557,7 +617,6 @@ async function main() {
           restaurant: {
             create: {
               isPureVeg: true,
-              menuItems: ['Sadhya', 'Thali', 'Dosa'] as any,
             },
           },
           media: {
@@ -570,6 +629,22 @@ async function main() {
             ],
           },
         },
+      });
+
+      const menuDefs = [
+        { name: 'Ghee Roast Dosa', price: rand(90, 160) },
+        { name: 'Mini Meals', price: rand(110, 180) },
+        { name: 'Poori Masala', price: rand(70, 120) },
+        { name: 'Meals', price: rand(120, 220) },
+      ];
+
+      await prisma.restaurantMenuItem.createMany({
+        data: menuDefs.map((menuItem, idx) => ({
+          restaurantLocationId: location.id,
+          name: menuItem.name,
+          image: pick(MENU_ITEM_IMAGES, idx),
+          price: new Prisma.Decimal(menuItem.price),
+        })),
       });
     }
   }
@@ -649,22 +724,22 @@ async function main() {
       });
 
       // Add sample reviews
-      await prisma.review.create({
-        data: {
-          userId: user.id,
-          astrologerId: ast.id,
-          rating: 5,
-          comment:
-            'text used by designers, web developers, and publishers to preview layouts and typography before final content is ready',
-        },
-      });
-      await prisma.review.create({
-        data: {
-          userId: user.id,
-          astrologerId: ast.id,
-          rating: 4,
-          comment: 'Good experience, but wait time was long.',
-        },
+      await prisma.review.createMany({
+        data: [
+          {
+            userId: user.id,
+            astrologerId: ast.id,
+            rating: 5,
+            comment:
+              'text used by designers, web developers, and publishers to preview layouts and typography before final content is ready',
+          },
+          {
+            userId: user.id,
+            astrologerId: ast.id,
+            rating: 4,
+            comment: 'Good experience, but wait time was long.',
+          },
+        ],
       });
     }
   }
