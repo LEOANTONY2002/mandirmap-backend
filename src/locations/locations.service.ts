@@ -290,4 +290,105 @@ export class LocationsService {
     }
     return f;
   }
+
+  async addReview(
+    locationId: string,
+    userId: string,
+    rating: number,
+    comment?: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const review = await tx.review.create({
+        data: {
+          locationId,
+          userId,
+          rating,
+          comment,
+        },
+        include: { user: true },
+      });
+
+      // Update location stats
+      const allReviews = await tx.review.findMany({
+        where: { locationId },
+      });
+      const newTotal = allReviews.length;
+      const newRating =
+        allReviews.reduce((sum, r) => sum + r.rating, 0) / newTotal;
+
+      await tx.location.update({
+        where: { id: locationId },
+        data: {
+          averageRating: newRating,
+          totalRatings: newTotal,
+        },
+      });
+
+      return review;
+    });
+  }
+
+  async updateReview(
+    reviewId: string,
+    locationId: string,
+    userId: string,
+    rating: number,
+    comment?: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const review = await tx.review.update({
+        where: { id: reviewId, userId, locationId },
+        data: { rating, comment },
+        include: { user: true },
+      });
+
+      // Update location stats
+      const allReviews = await tx.review.findMany({
+        where: { locationId },
+      });
+      const newTotal = allReviews.length;
+      const newRating =
+        newTotal > 0
+          ? allReviews.reduce((sum, r) => sum + r.rating, 0) / newTotal
+          : 0;
+
+      await tx.location.update({
+        where: { id: locationId },
+        data: {
+          averageRating: newRating,
+          totalRatings: newTotal,
+        },
+      });
+
+      return review;
+    });
+  }
+
+  async deleteReview(reviewId: string, locationId: string, userId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.review.delete({
+        where: { id: reviewId, userId, locationId },
+      });
+
+      // Update location stats
+      const allReviews = await tx.review.findMany({
+        where: { locationId },
+      });
+      const newTotal = allReviews.length;
+      const newRating =
+        newTotal > 0
+          ? allReviews.reduce((sum, r) => sum + r.rating, 0) / newTotal
+          : 0;
+
+      await tx.location.update({
+        where: { id: locationId },
+        data: {
+          averageRating: newRating,
+          totalRatings: newTotal,
+        },
+      });
+
+      return { success: true };
+    });
+  }
 }

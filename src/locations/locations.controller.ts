@@ -1,6 +1,19 @@
-import { Controller, Get, Query, Param, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Query,
+  Param,
+  Headers,
+  UseGuards,
+  Req,
+  Body,
+} from '@nestjs/common';
 import { LocationsService } from './locations.service';
 import { Category } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('locations')
 export class LocationsController {
@@ -76,5 +89,47 @@ export class LocationsController {
     @Headers('accept-language') lang: string = 'en',
   ) {
     return this.locationsService.getTempleDetails(lang, id);
+  }
+
+  @Post(':id/reviews')
+  @UseGuards(JwtAuthGuard)
+  async addReview(
+    @Param('id') id: string,
+    @Req() req,
+    @Body('rating') rating: number,
+    @Body('comment') comment?: string,
+  ) {
+    const userId = req.user.id;
+    return this.locationsService.addReview(id, userId, rating, comment);
+  }
+
+  @Put(':id/reviews/:reviewId')
+  @UseGuards(JwtAuthGuard)
+  async updateReview(
+    @Param('id') id: string,
+    @Param('reviewId') reviewId: string,
+    @Req() req,
+    @Body('rating') rating: number,
+    @Body('comment') comment?: string,
+  ) {
+    const userId = req.user.id;
+    return this.locationsService.updateReview(
+      reviewId,
+      id,
+      userId,
+      rating,
+      comment,
+    );
+  }
+
+  @Delete(':id/reviews/:reviewId')
+  @UseGuards(JwtAuthGuard)
+  async deleteReview(
+    @Param('id') id: string,
+    @Param('reviewId') reviewId: string,
+    @Req() req,
+  ) {
+    const userId = req.user.id;
+    return this.locationsService.deleteReview(reviewId, id, userId);
   }
 }
