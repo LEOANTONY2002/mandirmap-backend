@@ -7,6 +7,7 @@ import { MediaModule } from './media/media.module';
 import { AstrologersModule } from './astrologers/astrologers.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { UsersModule } from './users/users.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UsersModule } from './users/users.module';
     MediaModule,
     AstrologersModule,
     FavoritesModule,
+    AdminModule,
   ],
 })
 export class AppModule {}
