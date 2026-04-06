@@ -8,8 +8,11 @@ import {
   Post,
   Query,
   Request,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Category } from '@prisma/client';
 import { AdminGuard } from './admin.guard';
 import { AdminService } from './admin.service';
@@ -30,8 +33,22 @@ export class AdminController {
   }
 
   @Get('users')
-  listUsers(@Query('search') search?: string) {
-    return this.adminService.listUsers(search);
+  listUsers(
+    @Query('search') search?: string,
+    @Query('state') state?: string,
+    @Query('language') language?: string,
+    @Query('hasAvatar') hasAvatar?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.adminService.listUsers({
+      search,
+      state,
+      language,
+      hasAvatar,
+      page,
+      pageSize,
+    });
   }
 
   @Patch('users/:id')
@@ -43,8 +60,21 @@ export class AdminController {
   listLocations(
     @Query('category') category?: Category,
     @Query('search') search?: string,
+    @Query('district') district?: string,
+    @Query('state') state?: string,
+    @Query('hasMedia') hasMedia?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
   ) {
-    return this.adminService.listLocations({ category, search });
+    return this.adminService.listLocations({
+      category,
+      search,
+      district,
+      state,
+      hasMedia,
+      page,
+      pageSize,
+    });
   }
 
   @Get('locations/:id')
@@ -68,8 +98,13 @@ export class AdminController {
   }
 
   @Get('deities')
-  listDeities(@Query('search') search?: string) {
-    return this.adminService.listDeities(search);
+  listDeities(
+    @Query('search') search?: string,
+    @Query('hasPhoto') hasPhoto?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.adminService.listDeities({ search, hasPhoto, page, pageSize });
   }
 
   @Post('deities')
@@ -88,8 +123,13 @@ export class AdminController {
   }
 
   @Get('amenities')
-  listAmenities(@Query('search') search?: string) {
-    return this.adminService.listAmenities(search);
+  listAmenities(
+    @Query('search') search?: string,
+    @Query('hasImage') hasImage?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.adminService.listAmenities({ search, hasImage, page, pageSize });
   }
 
   @Post('amenities')
@@ -108,8 +148,22 @@ export class AdminController {
   }
 
   @Get('festivals')
-  listFestivals(@Query('search') search?: string) {
-    return this.adminService.listFestivals(search);
+  listFestivals(
+    @Query('search') search?: string,
+    @Query('locationId') locationId?: string,
+    @Query('deityId') deityId?: string,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.adminService.listFestivals({
+      search,
+      locationId,
+      deityId,
+      status,
+      page,
+      pageSize,
+    });
   }
 
   @Post('festivals')
@@ -128,8 +182,33 @@ export class AdminController {
   }
 
   @Get('astrologers')
-  listAstrologers(@Query('search') search?: string) {
-    return this.adminService.listAstrologers(search);
+  listAstrologers(
+    @Query('search') search?: string,
+    @Query('state') state?: string,
+    @Query('district') district?: string,
+    @Query('verified') verified?: string,
+    @Query('hasAvatar') hasAvatar?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.adminService.listAstrologers({
+      search,
+      state,
+      district,
+      verified,
+      hasAvatar,
+      page,
+      pageSize,
+    });
+  }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Query('folder') folder?: string,
+  ) {
+    return this.adminService.uploadAsset(file, folder);
   }
 
   @Post('astrologers')

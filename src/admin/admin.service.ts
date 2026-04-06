@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Category, Language, MediaType, Prisma } from '@prisma/client';
+import { MediaService } from '../media/media.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 type SaveLocationInput = {
@@ -49,7 +50,10 @@ type SaveLocationInput = {
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mediaService: MediaService,
+  ) {}
 
   async getDashboard() {
     const [
@@ -92,30 +96,61 @@ export class AdminService {
     };
   }
 
-  listUsers(search?: string) {
-    return this.prisma.user.findMany({
-      where: search
+  async listUsers(params: {
+    search?: string;
+    state?: string;
+    language?: string;
+    hasAvatar?: string;
+    page?: string;
+    pageSize?: string;
+  }) {
+    const pagination = this.getPagination(params.page, params.pageSize);
+    const where: Prisma.UserWhereInput = {
+      ...(params.search
         ? {
             OR: [
-              { fullName: { contains: search, mode: 'insensitive' } },
-              { email: { contains: search, mode: 'insensitive' } },
-              { phoneNumber: { contains: search, mode: 'insensitive' } },
+              { fullName: { contains: params.search, mode: 'insensitive' } },
+              { email: { contains: params.search, mode: 'insensitive' } },
+              { phoneNumber: { contains: params.search, mode: 'insensitive' } },
             ],
           }
-        : undefined,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phoneNumber: true,
-        avatarUrl: true,
-        language: true,
-        district: true,
-        state: true,
-        createdAt: true,
-      },
-    });
+        : {}),
+      ...(params.state
+        ? { state: { contains: params.state, mode: 'insensitive' } }
+        : {}),
+      ...(params.language ? { language: params.language as Language } : {}),
+      ...(params.hasAvatar === 'true'
+        ? { avatarUrl: { not: null } }
+        : params.hasAvatar === 'false'
+          ? { avatarUrl: null }
+          : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: pagination.skip,
+        take: pagination.take,
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phoneNumber: true,
+          avatarUrl: true,
+          language: true,
+          district: true,
+          state: true,
+          address1: true,
+          address2: true,
+          address3: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return this.paginated(items, total, pagination);
   }
 
   updateUser(
@@ -150,48 +185,81 @@ export class AdminService {
     });
   }
 
-  listLocations(params: { category?: Category; search?: string }) {
-    return this.prisma.location.findMany({
-      where: {
-        category: params.category,
-        ...(params.search
-          ? {
-              OR: [
-                { name: { contains: params.search, mode: 'insensitive' } },
-                {
-                  addressText: { contains: params.search, mode: 'insensitive' },
-                },
-                { district: { contains: params.search, mode: 'insensitive' } },
-                { state: { contains: params.search, mode: 'insensitive' } },
-              ],
-            }
+  async listLocations(params: {
+    category?: Category;
+    search?: string;
+    district?: string;
+    state?: string;
+    hasMedia?: string;
+    page?: string;
+    pageSize?: string;
+  }) {
+    const pagination = this.getPagination(params.page, params.pageSize);
+    const where: Prisma.LocationWhereInput = {
+      ...(params.category ? { category: params.category } : {}),
+      ...(params.search
+        ? {
+            OR: [
+              { name: { contains: params.search, mode: 'insensitive' } },
+              { addressText: { contains: params.search, mode: 'insensitive' } },
+              { district: { contains: params.search, mode: 'insensitive' } },
+              { state: { contains: params.search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+      ...(params.district
+        ? { district: { contains: params.district, mode: 'insensitive' } }
+        : {}),
+      ...(params.state
+        ? { state: { contains: params.state, mode: 'insensitive' } }
+        : {}),
+      ...(params.hasMedia === 'true'
+        ? { media: { some: {} } }
+        : params.hasMedia === 'false'
+          ? { media: { none: {} } }
           : {}),
-      },
-      include: {
-        temple: {
-          include: {
-            deities: {
-              include: { deity: true },
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.location.findMany({
+        where,
+        skip: pagination.skip,
+        take: pagination.take,
+        include: {
+          media: {
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+          },
+          restaurant: {
+            include: {
+              menuItems: {
+                take: 1,
+              },
+            },
+          },
+          hotel: {
+            include: {
+              amenities: {
+                take: 2,
+                include: { amenity: true },
+              },
+            },
+          },
+          temple: {
+            include: {
+              deities: {
+                take: 2,
+                include: { deity: true },
+              },
             },
           },
         },
-        hotel: {
-          include: {
-            amenities: {
-              include: { amenity: true },
-            },
-          },
-        },
-        restaurant: {
-          include: {
-            menuItems: true,
-          },
-        },
-        festivals: true,
-        media: true,
-      },
-      orderBy: { name: 'asc' },
-    });
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.location.count({ where }),
+    ]);
+
+    return this.paginated(items, total, pagination);
   }
 
   async getLocation(id: string) {
@@ -256,13 +324,35 @@ export class AdminService {
     return { success: true };
   }
 
-  listDeities(search?: string) {
-    return this.prisma.deity.findMany({
-      where: search
-        ? { name: { contains: search, mode: 'insensitive' } }
-        : undefined,
-      orderBy: { name: 'asc' },
-    });
+  async listDeities(params: {
+    search?: string;
+    hasPhoto?: string;
+    page?: string;
+    pageSize?: string;
+  }) {
+    const pagination = this.getPagination(params.page, params.pageSize);
+    const where: Prisma.DeityWhereInput = {
+      ...(params.search
+        ? { name: { contains: params.search, mode: 'insensitive' } }
+        : {}),
+      ...(params.hasPhoto === 'true'
+        ? { photoUrl: { not: null } }
+        : params.hasPhoto === 'false'
+          ? { photoUrl: null }
+          : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.deity.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        skip: pagination.skip,
+        take: pagination.take,
+      }),
+      this.prisma.deity.count({ where }),
+    ]);
+
+    return this.paginated(items, total, pagination);
   }
 
   createDeity(body: { name: string; nameMl?: string | null; photoUrl?: string | null }) {
@@ -281,13 +371,35 @@ export class AdminService {
     return { success: true };
   }
 
-  listAmenities(search?: string) {
-    return this.prisma.amenity.findMany({
-      where: search
-        ? { title: { contains: search, mode: 'insensitive' } }
-        : undefined,
-      orderBy: { title: 'asc' },
-    });
+  async listAmenities(params: {
+    search?: string;
+    hasImage?: string;
+    page?: string;
+    pageSize?: string;
+  }) {
+    const pagination = this.getPagination(params.page, params.pageSize);
+    const where: Prisma.AmenityWhereInput = {
+      ...(params.search
+        ? { title: { contains: params.search, mode: 'insensitive' } }
+        : {}),
+      ...(params.hasImage === 'true'
+        ? { image: { not: null } }
+        : params.hasImage === 'false'
+          ? { image: null }
+          : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.amenity.findMany({
+        where,
+        orderBy: { title: 'asc' },
+        skip: pagination.skip,
+        take: pagination.take,
+      }),
+      this.prisma.amenity.count({ where }),
+    ]);
+
+    return this.paginated(items, total, pagination);
   }
 
   createAmenity(body: { title: string; image?: string | null }) {
@@ -303,21 +415,50 @@ export class AdminService {
     return { success: true };
   }
 
-  listFestivals(search?: string) {
-    return this.prisma.festival.findMany({
-      where: search
-        ? { name: { contains: search, mode: 'insensitive' } }
-        : undefined,
-      include: {
-        location: {
-          select: { id: true, name: true },
+  async listFestivals(params: {
+    search?: string;
+    locationId?: string;
+    deityId?: string;
+    status?: string;
+    page?: string;
+    pageSize?: string;
+  }) {
+    const pagination = this.getPagination(params.page, params.pageSize);
+    const now = new Date();
+    const where: Prisma.FestivalWhereInput = {
+      ...(params.search
+        ? { name: { contains: params.search, mode: 'insensitive' } }
+        : {}),
+      ...(params.locationId ? { locationId: params.locationId } : {}),
+      ...(params.deityId ? { deityId: Number(params.deityId) } : {}),
+      ...(params.status === 'upcoming'
+        ? { startDate: { gt: now } }
+        : params.status === 'ongoing'
+          ? { AND: [{ startDate: { lte: now } }, { endDate: { gte: now } }] }
+          : params.status === 'completed'
+            ? { endDate: { lt: now } }
+            : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.festival.findMany({
+        where,
+        include: {
+          location: {
+            select: { id: true, name: true },
+          },
+          deity: {
+            select: { id: true, name: true },
+          },
         },
-        deity: {
-          select: { id: true, name: true },
-        },
-      },
-      orderBy: { startDate: 'desc' },
-    });
+        orderBy: { startDate: 'desc' },
+        skip: pagination.skip,
+        take: pagination.take,
+      }),
+      this.prisma.festival.count({ where }),
+    ]);
+
+    return this.paginated(items, total, pagination);
   }
 
   createFestival(body: {
@@ -377,13 +518,49 @@ export class AdminService {
     return { success: true };
   }
 
-  listAstrologers(search?: string) {
-    return this.prisma.astrologer.findMany({
-      where: search
-        ? { name: { contains: search, mode: 'insensitive' } }
-        : undefined,
-      orderBy: { name: 'asc' },
-    });
+  async listAstrologers(params: {
+    search?: string;
+    state?: string;
+    district?: string;
+    verified?: string;
+    hasAvatar?: string;
+    page?: string;
+    pageSize?: string;
+  }) {
+    const pagination = this.getPagination(params.page, params.pageSize);
+    const where: Prisma.AstrologerWhereInput = {
+      ...(params.search
+        ? { name: { contains: params.search, mode: 'insensitive' } }
+        : {}),
+      ...(params.state
+        ? { state: { contains: params.state, mode: 'insensitive' } }
+        : {}),
+      ...(params.district
+        ? { district: { contains: params.district, mode: 'insensitive' } }
+        : {}),
+      ...(params.verified === 'true'
+        ? { isVerified: true }
+        : params.verified === 'false'
+          ? { isVerified: false }
+          : {}),
+      ...(params.hasAvatar === 'true'
+        ? { avatarUrl: { not: null } }
+        : params.hasAvatar === 'false'
+          ? { avatarUrl: null }
+          : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.astrologer.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        skip: pagination.skip,
+        take: pagination.take,
+      }),
+      this.prisma.astrologer.count({ where }),
+    ]);
+
+    return this.paginated(items, total, pagination);
   }
 
   async createAstrologer(body: Record<string, any>) {
@@ -419,6 +596,11 @@ export class AdminService {
     ]);
 
     return { deities, amenities, locations, categories: Object.values(Category) };
+  }
+
+  async uploadAsset(file: Express.Multer.File, folder?: string) {
+    const url = await this.mediaService.uploadFile(file, folder || 'admin');
+    return { url };
   }
 
   private async saveLocation(
@@ -570,6 +752,37 @@ export class AdminService {
       districtMl: body.districtMl ?? null,
       state: body.state ?? null,
       stateMl: body.stateMl ?? null,
+    };
+  }
+
+  private getPagination(page?: string, pageSize?: string) {
+    const currentPage = Math.max(parseInt(page || '1', 10) || 1, 1);
+    const currentPageSize = Math.min(
+      Math.max(parseInt(pageSize || '12', 10) || 12, 1),
+      50,
+    );
+
+    return {
+      page: currentPage,
+      pageSize: currentPageSize,
+      skip: (currentPage - 1) * currentPageSize,
+      take: currentPageSize,
+    };
+  }
+
+  private paginated<T>(
+    items: T[],
+    total: number,
+    pagination: { page: number; pageSize: number },
+  ) {
+    return {
+      items,
+      pagination: {
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pagination.pageSize), 1),
+      },
     };
   }
 

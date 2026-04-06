@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from '../auth/auth.module';
+import { MediaModule } from '../media/media.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AdminAuthController } from './admin-auth.controller';
 import { AdminAuthService } from './admin-auth.service';
@@ -9,7 +10,7 @@ import { AdminGuard } from './admin.guard';
 import { AdminService } from './admin.service';
 
 @Module({
-  imports: [ConfigModule, PrismaModule, AuthModule],
+  imports: [ConfigModule, PrismaModule, AuthModule, MediaModule],
   controllers: [AdminAuthController, AdminController],
   providers: [AdminAuthService, AdminService, AdminGuard],
 })
