@@ -8,6 +8,8 @@ import { AstrologersModule } from './astrologers/astrologers.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { UsersModule } from './users/users.module';
 import { AdminModule } from './admin/admin.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -23,5 +25,7 @@ import { AdminModule } from './admin/admin.module';
     FavoritesModule,
     AdminModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

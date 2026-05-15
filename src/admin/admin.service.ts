@@ -227,20 +227,16 @@ export class AdminService {
         take: pagination.take,
         include: {
           media: {
-            take: 1,
             orderBy: { createdAt: 'desc' },
           },
           restaurant: {
             include: {
-              menuItems: {
-                take: 1,
-              },
+              menuItems: true,
             },
           },
           hotel: {
             include: {
               amenities: {
-                take: 2,
                 include: { amenity: true },
               },
             },
@@ -248,7 +244,6 @@ export class AdminService {
           temple: {
             include: {
               deities: {
-                take: 2,
                 include: { deity: true },
               },
             },
