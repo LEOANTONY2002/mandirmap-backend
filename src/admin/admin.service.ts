@@ -603,7 +603,7 @@ export class AdminService {
     body: SaveLocationInput,
     uploaderId: string,
   ) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const location = id
         ? await tx.location.update({
             where: { id },
@@ -728,8 +728,10 @@ export class AdminService {
         });
       }
 
-      return this.getLocation(location.id);
+      return location;
     });
+
+    return this.getLocation(result.id);
   }
 
   private locationData(body: SaveLocationInput) {

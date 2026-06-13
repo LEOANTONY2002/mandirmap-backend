@@ -104,8 +104,8 @@ model Deity {
 model TempleDeity {
   templeId    String   @map("temple_id")
   deityId     Int      @map("deity_id")
-  temple      Temple   @relation(fields: [templeId], references: [locationId])
-  deity       Deity    @relation(fields: [deityId], references: [id])
+  temple      Temple   @relation(fields: [templeId], references: [locationId], onDelete: Cascade)
+  deity       Deity    @relation(fields: [deityId], references: [id], onDelete: Cascade)
 
   @@id([templeId, deityId])
 }
@@ -133,10 +133,10 @@ model Festival {
   endDate         DateTime @map("end_date")
   
   locationId      String   @map("location_id")
-  location        Location @relation(fields: [locationId], references: [id])
+  location        Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
   
   deityId         Int?     @map("deity_id")
-  deity           Deity?   @relation(fields: [deityId], references: [id])
+  deity           Deity?   @relation(fields: [deityId], references: [id], onDelete: SetNull)
   
   photoUrl        String?  @map("photo_url")
 }
@@ -214,7 +214,7 @@ model MediaContent {
   uploaderId    String    @map("user_id")
   user          User      @relation(fields: [uploaderId], references: [id])
   locationId    String?   @map("location_id")
-  location      Location? @relation(fields: [locationId], references: [id])
+  location      Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
   url           String    
   thumbnailUrl  String?   @map("thumbnail_url")
   type          MediaType 
